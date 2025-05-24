@@ -2,7 +2,7 @@ import requests
 import json
 
 # 你的 API URL
-url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWA-FFADC16C-8605-4FEA-B52A-02281BA42218&locationName=高雄市"
+url = "API"
 
 # 發送 GET 請求
 response = requests.get(url)
