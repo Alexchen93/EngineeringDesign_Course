@@ -5,7 +5,7 @@
 #include <MFRC522.h>
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
-#include <SD.h>
+#include <SPIFFS.h>
 #include "WebPage.h"
 
 // ====== WiFi & Web App ======
@@ -47,16 +47,17 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
-
   SPI.begin();
   mfrc522.PCD_Init();
 
-  if (!SD.begin(SD_CS)) {
-    Serial.println("SD 卡掛載失敗");
+  // 初始化 SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS 掛載失敗");
   } else {
-    Serial.println("SD 卡初始化成功");
+    Serial.println("SPIFFS 初始化成功");
   }
 
+  // WiFi 連線
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -71,7 +72,7 @@ void setup() {
   server.on("/startScan", HTTP_POST, handleStartScan);
   server.on("/scanStatus", HTTP_GET, handleScanStatus);
   server.on("/cards", HTTP_GET, handleGetCards);
-  server.on("/cards", HTTP_POST, handleAddCard); // Not implemented (SD write)
+  server.on("/cards", HTTP_POST, handleAddCard); // SPIFFS write
   server.on("/cards", HTTP_DELETE, handleDeleteCard);
   server.on("/recommend", HTTP_GET, handleRecommend);
   server.on("/similarHistory", HTTP_GET, handleSimilarHistory);
@@ -123,7 +124,7 @@ void handleScanStatus() {
 
 void handleGetCards() {
   Serial.println("嘗試開啟 clothes.json");
-  File file = SD.open("/clothes.json");
+  File file = SPIFFS.open("/clothes.json");
   if (!file) {
     Serial.println("clothes.json 開啟失敗");
     server.send(500, "application/json", "[]");
@@ -138,8 +139,41 @@ void handleGetCards() {
 }
 
 void handleAddCard() {
-  // TODO: 實作將新卡片資料寫入 SD 卡
-  server.send(501, "text/plain", "Not implemented");
+  // 讀取現有 clothes.json
+  File file = SPIFFS.open("/clothes.json", FILE_READ);
+  DynamicJsonDocument doc(4096);
+  if (file) {
+    DeserializationError err = deserializeJson(doc, file);
+    file.close();
+    if (err) {
+      Serial.println("JSON 解析失敗，建立新陣列");
+      doc.to<JsonArray>();
+    }
+  } else {
+    doc.to<JsonArray>();
+  }
+
+  // 取得前端傳來的 JSON
+  DynamicJsonDocument input(512);
+  DeserializationError err = deserializeJson(input, server.arg("plain"));
+  if (err) {
+    server.send(400, "text/plain", "JSON 格式錯誤");
+    return;
+  }
+
+  // 新增到陣列
+  JsonArray arr = doc.as<JsonArray>();
+  arr.add(input);
+
+  // 寫回 SPIFFS
+  file = SPIFFS.open("/clothes.json", FILE_WRITE);
+  if (!file) {
+    server.send(500, "text/plain", "無法寫入 clothes.json");
+    return;
+  }
+  serializeJson(doc, file);
+  file.close();
+  server.send(200, "text/plain", "新增成功");
 }
 
 void handleRecommend() {
@@ -193,7 +227,7 @@ void handleRecommend() {
 }
 
 void handleSimilarHistory() {
-  File file = SD.open("/history.json");
+  File file = SPIFFS.open("/history.json");
   if (!file) {
     server.send(500, "application/json", "[]");
     return;
