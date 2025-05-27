@@ -676,15 +676,15 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
     }
 
     function updateStatistics() {
-      // 更新總衣物數量
-      const totalClothes = clothesData.length;
-      document.getElementById('totalClothes').textContent = totalClothes;
+      // 更新統計資訊
+      document.getElementById('totalClothes').textContent = clothesData.length || 0;
       
       // 計算今日使用次數
       const today = new Date().toISOString().split('T')[0];
       let todayUsage = 0;
       
       if (Array.isArray(historyData) && historyData.length > 0) {
+        // 跳過標題行，從索引 1 開始
         todayUsage = historyData.slice(1).filter(row => {
           if (!Array.isArray(row) || row.length === 0) return false;
           const date = row[0];
@@ -788,21 +788,14 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
     async function getCards() {
       try {
-        showLoading();
         const response = await fetch('/cards');
-        console.log('Response status:', response.status);
-        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
         const data = await response.json();
-        console.log('Received data:', data);
         
         if (!Array.isArray(data)) {
-          console.error('Invalid data format:', data);
-          showNotification('資料格式錯誤', 'error');
-          return;
+          throw new Error('返回數據格式錯誤');
         }
 
         clothesData = data.map(item => ({
@@ -810,27 +803,16 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
           features: item.features || {}
         }));
 
-        console.log('Processed clothes data:', clothesData);
-        
-        // 更新篩選選項
         updateFilterOptions(clothesData);
-        
-        // 更新統計資訊
-        updateStatistics();
-        
-        // 渲染衣物列表
         const container = document.getElementById('contentView');
         if (viewMode === 'list') {
           renderListView(container);
         } else {
           renderGridView(container);
         }
-        
-        hideLoading();
       } catch (error) {
         console.error('獲取衣物數據失敗:', error);
         showNotification('獲取衣物數據失敗，請稍後重試', 'error');
-        hideLoading();
       }
     }
 
@@ -855,17 +837,6 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
     }
 
     function renderListView(container) {
-      if (!Array.isArray(clothesData) || clothesData.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📦</div>
-            <p>目前沒有衣物資料</p>
-            <button onclick="startScan()">新增衣物</button>
-          </div>
-        `;
-        return;
-      }
-
       // 準備篩選選單的選項
       const tops = new Set();
       const models = new Set();
@@ -997,108 +968,27 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
     }
 
     function renderGridView(container) {
-      if (!Array.isArray(clothesData) || clothesData.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📦</div>
-            <p>目前沒有衣物資料</p>
-            <button onclick="startScan()">新增衣物</button>
-          </div>
-        `;
-        return;
-      }
-
       const positions = ['A1', 'A2', 'B1', 'B2'];
       let html = '<div class="clothes-grid">';
       
       positions.forEach(pos => {
-        const items = clothesData.filter(item => 
-          item && item.features && item.features.position === pos
-        );
-        
-        console.log(`Position ${pos} items:`, items); // 除錯用
-        
+        const items = clothesData.filter(item => item.features && item.features.position === pos);
         html += `
           <div class="clothes-space" onclick="showSpaceDetails('${pos}')">
             <div class="space-icon">📍</div>
             <h3>${pos}</h3>
             <p>${items.length} 件衣物</p>
-            <div class="space-items">
-              ${items.map(item => `
-                <div class="space-item">
-                  ${item.cloth || '未命名'} - ${item.features.color || '未指定顏色'}
-                </div>
-              `).join('')}
-            </div>
           </div>
         `;
       });
 
       html += '</div>';
       container.innerHTML = html;
-
-      // 添加新的樣式
-      const style = document.createElement('style');
-      style.textContent = `
-        .clothes-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1rem;
-          padding: 1rem;
-        }
-
-        .clothes-space {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 10px;
-          text-align: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .clothes-space:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .space-icon {
-          font-size: 2rem;
-          margin-bottom: 0.5rem;
-          color: var(--primary);
-        }
-
-        .space-items {
-          margin-top: 1rem;
-          text-align: left;
-          font-size: 0.9rem;
-        }
-
-        .space-item {
-          padding: 0.5rem;
-          margin: 0.25rem 0;
-          background: #f8f9fa;
-          border-radius: 4px;
-          border-left: 3px solid var(--primary);
-        }
-
-        @media (max-width: 768px) {
-          .clothes-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `;
-      document.head.appendChild(style);
     }
 
     function showSpaceDetails(pos) {
       console.log('Opening modal for position:', pos);
-      const items = clothesData.filter(item => 
-        item && item.features && item.features.position === pos
-      );
-      
-      console.log(`Items in position ${pos}:`, items); // 除錯用
-      
+      const items = clothesData.filter(item => item.features && item.features.position === pos);
       const modalContent = document.getElementById('modalContent');
       
       // 準備篩選選單的選項
