@@ -345,11 +345,27 @@ void handleUpdateCard() {
     return;
   }
 
-  // 更新指定的項目
+  // 新增更多除錯訊息
+  Serial.println("[DEBUG] 嘗試更新資料");
+  Serial.println("[DEBUG] 接收到的 JSON 資料：");
+  serializeJson(input, Serial);
+  Serial.println();
+
+  // 檢查 clothes.json 的結構
+  if (!doc.is<JsonArray>()) {
+    Serial.println("[ERROR] clothes.json 的結構不是 JSON 陣列");
+    server.send(500, "text/plain", "clothes.json 的結構錯誤");
+    return;
+  }
+
+  // 嘗試更新指定的項目
   JsonArray arr = doc.as<JsonArray>();
   bool updated = false;
   for (JsonObject obj : arr) {
+    Serial.print("[DEBUG] 檢查 UUID: ");
+    Serial.println(obj["UUID"].as<String>());
     if (obj["UUID"] == input["UUID"]) {
+      Serial.println("[DEBUG] 找到匹配的 UUID，開始更新...");
       for (JsonPair kv : input.as<JsonObject>()) {
         obj[kv.key()] = kv.value();
       }
@@ -359,9 +375,15 @@ void handleUpdateCard() {
   }
 
   if (!updated) {
+    Serial.println("[ERROR] 找不到匹配的 UUID");
     server.send(404, "text/plain", "找不到指定的項目");
     return;
   }
+
+  // 確認更新後的 JSON 結構
+  Serial.println("[DEBUG] 更新後的 JSON 資料：");
+  serializeJson(doc, Serial);
+  Serial.println();
 
   // 寫回 SPIFFS
   file = SPIFFS.open("/clothes.json", FILE_WRITE);
