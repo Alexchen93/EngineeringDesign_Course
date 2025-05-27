@@ -10,15 +10,15 @@
 #include "DataJson.h"
 
 // ====== WiFi & Web App ======
-const char* ssid = "ite-441";
-const char* password = "ite12345";
+const char* ssid = "SSID";
+const char* password = "Password";
 
 #define RST_PIN   22
 #define SS_PIN    21
 #define LED_PIN   2
 // #define SD_CS     5     // SD 卡 CS  // 已不再使用SD卡，註解掉
 
-const char* CWA_API = "CWA-FFADC16C-8605-4FEA-B52A-02281BA42218";
+const char* CWA_API = "API";
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 WebServer server(80);
