@@ -23,7 +23,7 @@ const char* password = "ite12345";
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 WebServer server(80);
-const char* CWA_API = "CWA-FFADC16C-8605-4FEA-B52A-02281BA42218";
+const char* CWA_API = "API";
 
 // ====== 檔案路徑設定 ======
 const char* CLOTHES_FILE = "/clothes.json";
