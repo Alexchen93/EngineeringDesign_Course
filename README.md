@@ -16,8 +16,6 @@
    * [V7 (ProjectV6/V7)](#4-v7-web-介面版本)
    * [APIRead.py (天氣與穿搭建議)](#5-apireadpy-天氣資料讀取)
 8. [後續擴充](#後續擴充)
-9. [授權條款](#授權條款)
-
 ---
 
 ## 專案概述
@@ -208,13 +206,7 @@ EngineeringDesign_Course/
 * **行動 App**：開發 iOS/Android App，透過 RESTful API 遠端控制
 * **穿搭演算法**：AI 分析使用者歷史穿搭，提供個性化推薦
 
----
-
-## 授權條款
-
-本專案採用 [MIT License](./LICENSE)，歡迎自由使用、修改與散佈。
 
 ---
 
 > 若有任何問題或建議，歡迎透過 GitHub 提出 Issue 或 Pull Request。
-> —— Alex Chen ([chen@example.com](mailto:chen@example.com))
